@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registro de tiempo</title>
+<style>
+  :root {
+    --bg: #f4f5f4;
+    --card: #ffffff;
+    --ink: #191c1b;
+    --ink-muted: #535c57;
+    --ink-faint: #88938d;
+    --border: #dbe0dc;
+    --brand: #225740;
+    --brand-dark: #173d2c;
+    --brand-soft: #eef3f0;
+    --active-timer-bg: #f2f7f4;
+    --active-timer-border: #9ec2b1;
+    --active-timer-ink: #1a4d37;
+    --danger: #9e2a2b;
+    --danger-soft: #fbf0f0;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", Menlo, Consolas, Monaco, monospace;
+    --radius: 6px;
+    --transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  [data-theme="dark"] {
+    --bg: #141716;
+    --card: #1c201e;
+    --ink: #e3e7e4;
+    --ink-muted: #959e99;
+    --ink-faint: #5b6460;
+    --border: #2c3430;
+    --brand: #4ea37f;
+    --brand-dark: #3b8264;
+    --brand-soft: #1d2b24;
+    --active-timer-bg: #16241d;
+    --active-timer-border: #284738;
+    --active-timer-ink: #7ac4a4;
+    --danger: #cf5c5d;
+    --danger-soft: #2e1818;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+    display: flex;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .app-shell {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* Widget del Reloj */
+  .hero-timer {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: var(--transition);
+  }
+
+  .hero-timer.is-active {
+    background: var(--active-timer-bg);
+    border-color: var(--active-timer-border);
+  }
+
+  .timer-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .timer-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--active-timer-ink);
+    background: var(--card);
+    border: 1px solid var(--active-timer-border);
+    padding: 2px 8px;
+    border-radius: var(--radius);
+    max-width: 70%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .timer-today {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .timer-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .clock-digits {
+    font-family: var(--mono);
+    font-size: 42px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: var(--ink-faint);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hero-timer.is-active .clock-digits {
+    color: var(--active-timer-ink);
+  }
+
+  /* Paneles */
+  .section-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .controls-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Segmented Controls */
+  .segmented {
+    display: flex;
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 2px;
+    gap: 2px;
+    border: 1px solid var(--border);
+  }
+
+  .segmented button {
+    border: none;
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .segmented button[aria-pressed="true"] {
+    background: var(--card);
+    color: var(--ink);
+    font-weight: 600;
+    border: 1px solid var(--border);
+  }
+
+  /* Botones e Inputs */
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--ink);
+    padding: 6px 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: var(--transition);
+    white-space: nowrap;
+  }
+
+  button:hover {
+    background: var(--bg);
+    border-color: var(--ink-faint);
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+  }
+
+  .btn-primary {
+    background: var(--brand);
+    color: #ffffff;
+    border-color: var(--brand);
+  }
+  .btn-primary:hover {
+    background: var(--brand-dark);
+    border-color: var(--brand-dark);
+  }
+
+  .btn-start {
+    color: var(--brand);
+    border-color: var(--border);
+    background: var(--brand-soft);
+  }
+  .btn-start:hover {
+    background: var(--brand);
+    color: #ffffff;
+    border-color: var(--brand);
+  }
+
+  .btn-stop {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .btn-stop:hover {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: none;
+    color: var(--ink-muted);
+    padding: 4px 6px;
+  }
+  .btn-ghost:hover {
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  .btn-danger {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .btn-danger:hover {
+    background: var(--danger-soft);
+  }
+
+  input[type=text], input[type=number], input[type=date], input[type=time], select {
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 9px;
+    transition: var(--transition);
+    min-width: 0;
+  }
+
+  input[type=checkbox] {
+    accent-color: var(--brand);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+  }
+
+  input:focus-visible, select:focus-visible {
+    outline: none;
+    border-color: var(--brand);
+  }
+
+  /* Etiquetas de Carpetas Sobrias */
+  .f-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 4px;
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: fit-content;
+    max-width: 160px;
+    background: var(--bg);
+    color: var(--ink-muted);
+    border: 1px solid var(--border);
+  }
+
+  /* Listado de Proyectos */
+  .items-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .project-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    min-width: 0;
+  }
+
+  .project-item:last-child { border-bottom: none; }
+
+  .proj-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .proj-name {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .project-item.is-running .proj-name {
+    color: var(--active-timer-ink);
+    font-weight: 600;
+  }
+
+  .proj-time {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .project-item.is-running .proj-time {
+    color: var(--active-timer-ink);
+    font-weight: 600;
+  }
+
+  /* Sesiones */
+  .session-item {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    min-width: 0;
+  }
+
+  .session-item:last-child { border-bottom: none; }
+
+  .session-time {
+    font-family: var(--mono);
+    color: var(--ink-faint);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .session-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    color: var(--ink);
+  }
+
+  .session-dur {
+    font-family: var(--mono);
+    color: var(--ink-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Barra de selección */
+  .selection-toolbar {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+  }
+
+  /* Formularios */
+  .creator-bar {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+
+  .creator-bar input[type=text] { flex: 2; min-width: 140px; }
+  .creator-bar select { flex: 1; min-width: 120px; }
+
+  /* Historial */
+  .day-group { margin-top: 12px; }
+  .day-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Grid del Panel */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .pcard {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px;
+    gap: 8px;
+    transition: var(--transition);
+  }
+
+  .pcard.is-running {
+    background: var(--active-timer-bg);
+    border-color: var(--active-timer-border);
+  }
+
+  .pcard-title {
+    font-weight: 600;
+    font-size: 13px;
+    word-break: break-word;
+    margin-top: 4px;
+  }
+
+  .pcard-time {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pcard.is-running .pcard-time { color: var(--active-timer-ink); }
+
+  /* Modales */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 22, 20, 0.4);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .modal-overlay.is-open { display: flex; }
+
+  .modal-window {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 640px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-body {
+    padding: 18px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .folder-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .folder-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* Pie de página */
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 10px;
+    color: var(--ink-faint);
+    font-size: 12px;
+  }
+
+  .footer-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  @media (max-width: 520px) {
+    body { padding: 14px 12px 48px; }
+    .clock-digits { font-size: 36px; }
+    .hero-timer { padding: 16px; }
+    .section-card { padding: 14px; }
+    .session-item {
+      grid-template-columns: auto auto 1fr auto;
+      gap: 2px 6px;
+    }
+    .creator-bar { flex-direction: column; align-items: stretch; }
+    .creator-bar input, .creator-bar select, .creator-bar button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- Widget Central del Cronómetro -->
+  <section class="hero-timer" id="heroTimer">
+    <div class="timer-top">
+      <div class="timer-pill" id="livePill" style="display:none">
+        <span id="liveProjectName">Proyecto</span>
+      </div>
+      <span class="timer-today" id="todayTotalLabel">Hoy: 0:00:00</span>
+    </div>
+
+    <div class="timer-main">
+      <div class="clock-digits" id="mainClock">0:00:00</div>
+      <div id="heroActionBtn"></div>
+    </div>
+  </section>
+
+  <!-- Proyectos -->
+  <section class="section-card">
+    <div class="section-header">
+      <div class="section-title">
+        <span>Proyectos</span>
+        <button class="btn-ghost" id="openProjectsPanelBtn">Ver cuadrícula</button>
+      </div>
+      <div class="controls-row">
+        <select id="homeFolderSelect"></select>
+        <div class="segmented" data-ranges></div>
+      </div>
+    </div>
+
+    <ul class="items-list" id="projectsList"></ul>
+
+    <div class="creator-bar">
+      <input type="text" id="newProjectInput" placeholder="Nuevo proyecto..." maxlength="60">
+      <select id="newProjectFolderSelect"></select>
+      <button class="btn-primary" id="addProjectBtn">Añadir</button>
+    </div>
+  </section>
+
+  <!-- Hoy -->
+  <section class="section-card">
+    <div class="section-header">
+      <div class="section-title">
+        <span>Sesiones de hoy</span>
+        <span style="font-size:12px;color:var(--ink-muted);font-weight:400" id="todaySessionsCount"></span>
+      </div>
+      <div class="controls-row">
+        <button class="btn-ghost" id="toggleTodayEditBtn">Modo edición</button>
+        <button class="btn-ghost" id="openLogBtn">Historial completo</button>
+      </div>
+    </div>
+
+    <div class="selection-toolbar" id="todaySelectionToolbar" style="display:none">
+      <span id="todaySelectedCount">0 seleccionados</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn-ghost" id="todaySelectAllBtn">Todos</button>
+        <button class="btn-danger" id="todayDeleteSelectedBtn" disabled>Eliminar seleccionados</button>
+      </div>
+    </div>
+
+    <ul class="items-list" id="todaySessionsList"></ul>
+
+    <div class="creator-bar" id="manualEntryBar"></div>
+  </section>
+
+  <!-- Pie de página -->
+  <footer>
+    <div class="footer-actions">
+      <button class="btn-ghost" id="openFoldersBtn">Carpetas</button>
+      <button class="btn-ghost" id="themeToggleBtn">Tema</button>
+      <button class="btn-ghost" id="openSettingsBtn">Ajustes</button>
+    </div>
+    <span id="statusNote"></span>
+  </footer>
+</div>
+
+<!-- Modal: Cuadrícula de Proyectos -->
+<div class="modal-overlay" id="projectsModal">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h3 style="font-size:14px;font-weight:600">Cuadrícula de proyectos</h3>
+      <button class="btn-ghost" data-close-modal>Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div class="controls-row" style="justify-content:space-between">
+        <select id="panelFolderSelect"></select>
+        <div class="segmented" data-ranges></div>
+      </div>
+      <div class="projects-grid" id="projectsGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Proyecto -->
+<div class="modal-overlay" id="editProjectModal">
+  <div class="modal-window" style="max-width:440px">
+    <div class="modal-header">
+      <h3 style="font-size:14px;font-weight:600">Editar proyecto</h3>
+      <button class="btn-ghost" data-close-modal>Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label style="font-size:12px;color:var(--ink-muted)">Nombre del proyecto</label>
+        <input type="text" id="editProjectNameInput" maxlength="60">
+        
+        <label style="font-size:12px;color:var(--ink-muted)">Carpeta asignada</label>
+        <select id="editProjectFolderSelect"></select>
+      </div>
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <button class="btn-danger" id="deleteCurrentProjectBtn">Eliminar proyecto</button>
+        <button class="btn-primary" id="saveProjectChangesBtn">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Historial -->
+<div class="modal-overlay" id="logModal">
+  <div class="modal-window">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <h3 style="font-size:14px;font-weight:600">Historial</h3>
+        <span style="font-size:12px;color:var(--ink-muted);font-family:var(--mono)" id="modalLogTotal"></span>
+      </div>
+      <button class="btn-ghost" data-close-modal>Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div class="controls-row" style="justify-content:space-between">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <select id="logFolderSelect"></select>
+          <select id="logProjectSelect"></select>
+        </div>
+        <div class="segmented" id="logRangePicker"></div>
+      </div>
+      
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <button class="btn-ghost" id="toggleLogEditBtn">Modo edición</button>
+        <button class="btn-ghost" id="exportCsvBtn">Exportar CSV</button>
+      </div>
+
+      <div class="selection-toolbar" id="logSelectionToolbar" style="display:none">
+        <span id="logSelectedCount">0 seleccionados</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-ghost" id="logSelectAllBtn">Todos</button>
+          <button class="btn-danger" id="logDeleteSelectedBtn" disabled>Eliminar seleccionados</button>
+        </div>
+      </div>
+
+      <div id="logGroupsContainer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Gestión de Carpetas -->
+<div class="modal-overlay" id="foldersModal">
+  <div class="modal-window" style="max-width:480px">
+    <div class="modal-header">
+      <h3 style="font-size:14px;font-weight:600">Carpetas</h3>
+      <button class="btn-ghost" data-close-modal>Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div class="creator-bar">
+        <input type="text" id="folderNameInput" placeholder="Nueva carpeta..." maxlength="40">
+        <button class="btn-primary" id="saveFolderBtn">Crear</button>
+      </div>
+      <div class="folder-tags" id="foldersTagsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Carpeta Individual -->
+<div class="modal-overlay" id="editFolderModal">
+  <div class="modal-window" style="max-width:420px">
+    <div class="modal-header">
+      <h3 style="font-size:14px;font-weight:600">Editar carpeta</h3>
+      <button class="btn-ghost" data-close-modal>Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label style="font-size:12px;color:var(--ink-muted)">Nombre de la carpeta</label>
+        <input type="text" id="editFolderNameInput" maxlength="40">
+        <span style="font-size:12px;color:var(--ink-muted)" id="editFolderCountInfo"></span>
+      </div>
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <button class="btn-danger" id="deleteCurrentFolderBtn">Eliminar carpeta</button>
+        <button class="btn-primary" id="saveFolderChangesBtn">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ajustes -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-window" style="max-width:440px">
+    <div class="modal-header">
+      <h3 style="font-size:14px;font-weight:600">Ajustes de la aplicación</h3>
+      <button class="btn-ghost" data-close-modal>Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-weight:600;color:var(--danger)">Zona de peligro</span>
+        <p style="font-size:12px;color:var(--ink-muted)">
+          Esto eliminará todos los proyectos, carpetas y sesiones guardadas de forma irreversible.
+        </p>
+      </div>
+      
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+        <label style="font-size:12px;color:var(--ink-muted)">Escribe <b>BORRAR</b> para confirmar:</label>
+        <input type="text" id="confirmResetInput" placeholder="BORRAR">
+        <button class="btn-danger" id="confirmResetBtn" disabled>Borrar todos los datos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DB_KEY = 'timetracker:v2';
+let state = { folders: [], projects: [], sessions: [], running: null };
+let range = 'day';
+let logRange = 'week';
+let logProject = 'all';
+let logFolder = 'all';
+let homeFolder = 'all';
+let panelFolder = 'all';
+let theme = 'light';
+let isReady = false;
+
+let todayEditMode = false;
+let todaySelectedSessionIds = new Set();
+let logEditMode = false;
+let logSelectedSessionIds = new Set();
+let editingProjectId = null;
+let editingFolderId = null;
+let folderDeleteArmed = false;
+
+const RANGES = [['day','Hoy'],['week','Semana'],['month','Mes'],['all','Todo']];
+
+async function initStorage() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch (e) {}
+  if (!state || !state.projects) state = { folders: [], projects: [], sessions: [], running: null };
+  if (!state.folders) state.folders = [];
+  try {
+    const t = localStorage.getItem(DB_KEY + ':theme');
+    if (t) theme = t;
+  } catch (e) {}
+  syncTheme();
+  isReady = true;
+}
+
+let debounceTimer = null;
+function persist() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(DB_KEY, JSON.stringify(state));
+      showNotice('');
+    } catch (e) {
+      showNotice('Error al guardar datos');
+    }
+  }, 100);
+}
+
+function showNotice(msg) {
+  document.getElementById('statusNote').textContent = msg;
+}
+
+function syncTheme() {
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+const uid = () => Math.random().toString(36).slice(2, 9);
+const timestamp = () => Date.now();
+
+function formatHMS(ms) {
+  const secs = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function startOfDay(t) {
+  const d = new Date(t);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function computePeriodStart(r) {
+  const d = new Date();
+  if (r === 'day') return startOfDay(d);
+  if (r === 'week') {
+    const offset = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - offset);
+    return startOfDay(d);
+  }
+  if (r === 'month') {
+    d.setDate(1);
+    return startOfDay(d);
+  }
+  return 0;
+}
+
+function calcProjectDuration(projectId, fromTime) {
+  let total = 0;
+  for (const s of state.sessions) {
+    if (s.projectId !== projectId) continue;
+    if (s.start >= fromTime) total += (s.end - s.start);
+  }
+  if (state.running && state.running.projectId === projectId && state.running.start >= fromTime) {
+    total += (timestamp() - state.running.start);
+  }
+  return total;
+}
+
+function calcTotalDuration(fromTime) {
+  return state.projects.reduce((acc, p) => acc + calcProjectDuration(p.id, fromTime), 0);
+}
+
+function getProjectName(id) {
+  const p = state.projects.find(x => x.id === id);
+  return p ? p.name : 'Proyecto eliminado';
+}
+
+function getFolder(id) {
+  return state.folders.find(x => x.id === id);
+}
+
+function startClock(projectId) {
+  if (state.running) stopClock();
+  state.running = { projectId, start: timestamp() };
+  persist();
+  renderApp();
+}
+
+function stopClock() {
+  if (!state.running) return;
+  const { projectId, start: st } = state.running;
+  const end = timestamp();
+  state.running = null;
+  if (end - st >= 2000) {
+    state.sessions.push({ id: uid(), projectId, start: st, end });
+  }
+  persist();
+}
+
+function toggleClock(id) {
+  if (state.running && state.running.projectId === id) {
+    stopClock();
+    renderApp();
+  } else {
+    startClock(id);
+  }
+}
+
+function addProject(nameEl, folderEl) {
+  const name = nameEl.value.trim();
+  if (!name) return nameEl.focus();
+  const folderId = folderEl.value || null;
+  state.projects.push({ id: uid(), name, folderId });
+  nameEl.value = '';
+  persist();
+  renderApp();
+  nameEl.focus();
+}
+
+function buildSessionRow(s, isSelectMode, selectedSet, onToggleCallback) {
+  const li = document.createElement('li');
+  li.className = 'session-item';
+  const startD = new Date(s.start);
+  const endD = new Date(s.end);
+  const timeFmt = d => d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+  if (isSelectMode) {
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = selectedSet.has(s.id);
+    chk.addEventListener('change', () => {
+      if (chk.checked) selectedSet.add(s.id);
+      else selectedSet.delete(s.id);
+      onToggleCallback();
+    });
+    li.appendChild(chk);
+  } else {
+    const spacer = document.createElement('span');
+    spacer.style.width = '2px';
+    li.appendChild(spacer);
+  }
+
+  const when = document.createElement('span');
+  when.className = 'session-time';
+  when.textContent = `${timeFmt(startD)}–${timeFmt(endD)}`;
+
+  const nameBox = document.createElement('div');
+  nameBox.className = 'session-title';
+  const p = state.projects.find(x => x.id === s.projectId);
+  const f = p && p.folderId ? getFolder(p.folderId) : null;
+  
+  if (f) {
+    const badge = document.createElement('span');
+    badge.className = 'f-badge';
+    badge.style.marginRight = '6px';
+    badge.textContent = f.name;
+    nameBox.appendChild(badge);
+  }
+
+  const textNode = document.createElement('span');
+  textNode.textContent = getProjectName(s.projectId);
+  nameBox.appendChild(textNode);
+
+  const dur = document.createElement('span');
+  dur.className = 'session-dur';
+  dur.textContent = formatHMS(s.end - s.start);
+
+  li.append(when, nameBox, dur);
+  return li;
+}
+
+function refreshFolderSelectors() {
+  const applyOpts = (sel, hasAll = false) => {
+    const cur = sel.value;
+    sel.innerHTML = '';
+    if (hasAll) {
+      const optAll = document.createElement('option');
+      optAll.value = 'all'; optAll.textContent = 'Todas las carpetas';
+      sel.appendChild(optAll);
+      const optNone = document.createElement('option');
+      optNone.value = 'none'; optNone.textContent = 'Sin carpeta';
+      sel.appendChild(optNone);
+    } else {
+      const optDef = document.createElement('option');
+      optDef.value = ''; optDef.textContent = 'Sin carpeta';
+      sel.appendChild(optDef);
+    }
+    for (const f of state.folders) {
+      const opt = document.createElement('option');
+      opt.value = f.id; opt.textContent = '📁 ' + f.name;
+      sel.appendChild(opt);
+    }
+    sel.value = cur;
+  };
+
+  applyOpts(document.getElementById('newProjectFolderSelect'));
+  applyOpts(document.getElementById('homeFolderSelect'), true);
+  applyOpts(document.getElementById('panelFolderSelect'), true);
+  applyOpts(document.getElementById('logFolderSelect'), true);
+  applyOpts(document.getElementById('editProjectFolderSelect'));
+
+  if (!state.folders.some(f => f.id === homeFolder) && homeFolder !== 'none') homeFolder = 'all';
+  if (!state.folders.some(f => f.id === panelFolder) && panelFolder !== 'none') panelFolder = 'all';
+  if (!state.folders.some(f => f.id === logFolder) && logFolder !== 'none') logFolder = 'all';
+
+  document.getElementById('homeFolderSelect').value = homeFolder;
+  document.getElementById('panelFolderSelect').value = panelFolder;
+  document.getElementById('logFolderSelect').value = logFolder;
+}
+
+function renderApp() {
+  if (!isReady) return;
+  refreshFolderSelectors();
+  const periodStart = computePeriodStart(range);
+
+  document.querySelectorAll('[data-ranges]').forEach(box => {
+    box.innerHTML = '';
+    for (const [key, label] of RANGES) {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.setAttribute('aria-pressed', key === range);
+      b.addEventListener('click', () => { range = key; renderApp(); });
+      box.appendChild(b);
+    }
+  });
+
+  const filtered = state.projects.filter(p => {
+    if (homeFolder === 'all') return true;
+    if (homeFolder === 'none') return !p.folderId;
+    return p.folderId === homeFolder;
+  });
+
+  const pList = document.getElementById('projectsList');
+  pList.innerHTML = '';
+  for (const p of filtered) {
+    const isRunning = state.running && state.running.projectId === p.id;
+    const dur = calcProjectDuration(p.id, periodStart);
+    const li = document.createElement('li');
+    li.className = 'project-item' + (isRunning ? ' is-running' : '');
+
+    const info = document.createElement('div');
+    info.className = 'proj-info';
+    
+    if (p.folderId) {
+      const f = getFolder(p.folderId);
+      if (f) {
+        const badge = document.createElement('span');
+        badge.className = 'f-badge';
+        badge.textContent = f.name;
+        info.appendChild(badge);
+      }
+    }
+    const name = document.createElement('span');
+    name.className = 'proj-name';
+    name.textContent = p.name;
+    info.appendChild(name);
+
+    const time = document.createElement('span');
+    time.className = 'proj-time';
+    time.dataset.projId = p.id;
+    time.textContent = formatHMS(dur);
+
+    const btn = document.createElement('button');
+    btn.textContent = isRunning ? 'Parar' : 'Iniciar';
+    btn.className = isRunning ? 'btn-stop' : 'btn-start';
+    btn.addEventListener('click', () => toggleClock(p.id));
+
+    li.append(info, time, btn);
+    pList.appendChild(li);
+  }
+
+  const gridFiltered = state.projects.filter(p => {
+    if (panelFolder === 'all') return true;
+    if (panelFolder === 'none') return !p.folderId;
+    return p.folderId === panelFolder;
+  });
+
+  const grid = document.getElementById('projectsGrid');
+  grid.innerHTML = '';
+  for (const p of gridFiltered) {
+    const isRunning = state.running && state.running.projectId === p.id;
+    const dur = calcProjectDuration(p.id, periodStart);
+    const card = document.createElement('div');
+    card.className = 'pcard' + (isRunning ? ' is-running' : '');
+
+    const top = document.createElement('div');
+    if (p.folderId) {
+      const f = getFolder(p.folderId);
+      if (f) {
+        const badge = document.createElement('span');
+        badge.className = 'f-badge';
+        badge.textContent = f.name;
+        top.appendChild(badge);
+      }
+    }
+    const tit = document.createElement('div');
+    tit.className = 'pcard-title';
+    tit.textContent = p.name;
+    top.appendChild(tit);
+
+    const time = document.createElement('div');
+    time.className = 'pcard-time';
+    time.dataset.projId = p.id;
+    time.textContent = formatHMS(dur);
+
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.justifyContent = 'space-between';
+    actions.style.alignItems = 'center';
+
+    const btn = document.createElement('button');
+    btn.textContent = isRunning ? 'Parar' : 'Iniciar';
+    btn.className = isRunning ? 'btn-stop' : 'btn-start';
+    btn.addEventListener('click', () => toggleClock(p.id));
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-ghost';
+    editBtn.textContent = 'Editar';
+    editBtn.addEventListener('click', () => openEditProjectModal(p.id));
+
+    actions.append(btn, editBtn);
+    card.append(top, time, actions);
+    grid.appendChild(card);
+  }
+
+  renderTodayView();
+  renderHistoryView();
+  renderFoldersView();
+  renderManualEntryForm();
+  updateLiveTicks();
+}
+
+function renderTodayView() {
+  const box = document.getElementById('todaySessionsList');
+  box.innerHTML = '';
+  const dayStart = startOfDay(new Date());
+  const todaySessions = state.sessions.filter(s => s.start >= dayStart).sort((a,b) => b.start - a.start);
+  document.getElementById('todaySessionsCount').textContent = todaySessions.length ? `${todaySessions.length} registros` : '';
+
+  const toolbar = document.getElementById('todaySelectionToolbar');
+  const toggleBtn = document.getElementById('toggleTodayEditBtn');
+  toolbar.style.display = todayEditMode ? 'flex' : 'none';
+  toggleBtn.textContent = todayEditMode ? 'Listo' : 'Modo edición';
+
+  const updateTodaySelectionUI = () => {
+    document.getElementById('todaySelectedCount').textContent = `${todaySelectedSessionIds.size} seleccionados`;
+    document.getElementById('todayDeleteSelectedBtn').disabled = todaySelectedSessionIds.size === 0;
+  };
+
+  for (const s of todaySessions.slice(0, 8)) {
+    box.appendChild(buildSessionRow(s, todayEditMode, todaySelectedSessionIds, updateTodaySelectionUI));
+  }
+  updateTodaySelectionUI();
+}
+
+function renderHistoryView() {
+  const sel = document.getElementById('logProjectSelect');
+  const keepVal = logProject;
+  sel.innerHTML = '';
+
+  const optAll = document.createElement('option');
+  optAll.value = 'all'; optAll.textContent = 'Todos los proyectos';
+  sel.appendChild(optAll);
+
+  const projectsInScope = state.projects.filter(p => {
+    if (logFolder === 'all') return true;
+    if (logFolder === 'none') return !p.folderId;
+    return p.folderId === logFolder;
+  });
+
+  for (const p of projectsInScope) {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.name;
+    sel.appendChild(o);
+  }
+  sel.value = projectsInScope.some(p => p.id === keepVal) ? keepVal : 'all';
+  logProject = sel.value;
+
+  const rangePicker = document.getElementById('logRangePicker');
+  rangePicker.innerHTML = '';
+  for (const [k, l] of RANGES) {
+    const b = document.createElement('button');
+    b.textContent = l;
+    b.setAttribute('aria-pressed', k === logRange);
+    b.addEventListener('click', () => { logRange = k; renderHistoryView(); });
+    rangePicker.appendChild(b);
+  }
+
+  const fromTime = computePeriodStart(logRange);
+  const rows = state.sessions
+    .filter(s => {
+      if (s.start < fromTime) return false;
+      const p = state.projects.find(x => x.id === s.projectId);
+      if (logFolder !== 'all') {
+        if (!p) return false;
+        if (logFolder === 'none' && p.folderId) return false;
+        if (logFolder !== 'none' && p.folderId !== logFolder) return false;
+      }
+      return (logProject === 'all' || s.projectId === logProject);
+    })
+    .sort((a,b) => b.start - a.start);
+
+  const sumTotal = rows.reduce((acc, s) => acc + (s.end - s.start), 0);
+  document.getElementById('modalLogTotal').textContent = sumTotal ? `${formatHMS(sumTotal)} acumulado` : '';
+
+  const toolbar = document.getElementById('logSelectionToolbar');
+  const toggleBtn = document.getElementById('toggleLogEditBtn');
+  toolbar.style.display = logEditMode ? 'flex' : 'none';
+  toggleBtn.textContent = logEditMode ? 'Listo' : 'Modo edición';
+
+  const updateLogSelectionUI = () => {
+    document.getElementById('logSelectedCount').textContent = `${logSelectedSessionIds.size} seleccionados`;
+    document.getElementById('logDeleteSelectedBtn').disabled = logSelectedSessionIds.size === 0;
+  };
+
+  const container = document.getElementById('logGroupsContainer');
+  container.innerHTML = '';
+  const dayBuckets = new Map();
+  for (const s of rows) {
+    const k = startOfDay(s.start);
+    if (!dayBuckets.has(k)) dayBuckets.set(k, []);
+    dayBuckets.get(k).push(s);
+  }
+
+  for (const [dayKey, list] of dayBuckets) {
+    const grp = document.createElement('div');
+    grp.className = 'day-group';
+    const head = document.createElement('div');
+    head.className = 'day-header';
+    const dayName = new Date(dayKey).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+    head.textContent = dayName;
+    const sub = document.createElement('span');
+    sub.textContent = formatHMS(list.reduce((acc, s) => acc + (s.end - s.start), 0));
+    head.appendChild(sub);
+    grp.appendChild(head);
+
+    const ul = document.createElement('ul');
+    ul.className = 'items-list';
+    for (const s of list) {
+      ul.appendChild(buildSessionRow(s, logEditMode, logSelectedSessionIds, updateLogSelectionUI));
+    }
+    grp.appendChild(ul);
+    container.appendChild(grp);
+  }
+  updateLogSelectionUI();
+}
+
+function renderFoldersView() {
+  const container = document.getElementById('foldersTagsList');
+  container.innerHTML = '';
+  if (!state.folders.length) {
+    container.innerHTML = '<span style="font-size:13px;color:var(--ink-muted)">No hay carpetas creadas.</span>';
+    return;
+  }
+  for (const f of state.folders) {
+    const count = state.projects.filter(p => p.folderId === f.id).length;
+    const row = document.createElement('div');
+    row.className = 'folder-item-row';
+
+    const info = document.createElement('div');
+    info.style.display = 'flex';
+    info.style.alignItems = 'center';
+    info.style.gap = '8px';
+
+    const icon = document.createElement('span');
+    icon.textContent = '📁';
+    const name = document.createElement('span');
+    name.style.fontWeight = '500';
+    name.textContent = f.name;
+    const countLabel = document.createElement('span');
+    countLabel.style.fontSize = '12px';
+    countLabel.style.color = 'var(--ink-muted)';
+    countLabel.textContent = `(${count} ${count === 1 ? 'proyecto' : 'proyectos'})`;
+
+    info.append(icon, name, countLabel);
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-ghost';
+    editBtn.textContent = 'Editar';
+    editBtn.addEventListener('click', () => openEditFolderModal(f.id));
+
+    row.append(info, editBtn);
+    container.appendChild(row);
+  }
+}
+
+function renderManualEntryForm() {
+  const bar = document.getElementById('manualEntryBar');
+  bar.innerHTML = '';
+  if (!state.projects.length) return;
+
+  const sel = document.createElement('select');
+  for (const p of state.projects) {
+    const o = document.createElement('option');
+    o.value = p.id;
+    const f = p.folderId ? getFolder(p.folderId) : null;
+    o.textContent = (f ? `[${f.name}] ` : '') + p.name;
+    sel.appendChild(o);
+  }
+
+  const dInp = document.createElement('input');
+  dInp.type = 'date';
+  dInp.value = new Date().toISOString().slice(0, 10);
+
+  const tInp = document.createElement('input');
+  tInp.type = 'time';
+  tInp.value = '09:00';
+
+  const hrs = document.createElement('input');
+  hrs.type = 'number'; hrs.min = '0'; hrs.max = '24'; hrs.value = '1'; hrs.title = 'Horas';
+  hrs.style.width = '55px';
+
+  const mins = document.createElement('input');
+  mins.type = 'number'; mins.min = '0'; mins.max = '59'; mins.step = '5'; mins.value = '0'; mins.title = 'Minutos';
+  mins.style.width = '55px';
+
+  const btn = document.createElement('button');
+  btn.textContent = 'Guardar';
+  btn.className = 'btn-primary';
+  btn.addEventListener('click', () => {
+    const totalMinutes = (parseInt(hrs.value, 10) || 0) * 60 + (parseInt(mins.value, 10) || 0);
+    if (totalMinutes < 1 || !dInp.value) return;
+    const startMs = new Date(`${dInp.value}T${tInp.value || '09:00'}`).getTime();
+    state.sessions.push({
+      id: uid(),
+      projectId: sel.value,
+      start: startMs,
+      end: startMs + totalMinutes * 60000
+    });
+    persist();
+    renderApp();
+  });
+
+  bar.append(sel, dInp, tInp, hrs, mins, btn);
+}
+
+function updateLiveTicks() {
+  const hero = document.getElementById('heroTimer');
+  const clock = document.getElementById('mainClock');
+  const pill = document.getElementById('livePill');
+  const nameEl = document.getElementById('liveProjectName');
+  const actionBox = document.getElementById('heroActionBtn');
+
+  if (state.running) {
+    hero.classList.add('is-active');
+    clock.textContent = formatHMS(timestamp() - state.running.start);
+    pill.style.display = 'inline-flex';
+    const curProject = state.projects.find(x => x.id === state.running.projectId);
+    const f = curProject && curProject.folderId ? getFolder(curProject.folderId) : null;
+    nameEl.textContent = (f ? `[${f.name}] ` : '') + getProjectName(state.running.projectId);
+
+    actionBox.innerHTML = '';
+    const stopBtn = document.createElement('button');
+    stopBtn.className = 'btn-stop';
+    stopBtn.textContent = 'Parar';
+    stopBtn.addEventListener('click', () => { stopClock(); renderApp(); });
+    actionBox.appendChild(stopBtn);
+  } else {
+    hero.classList.remove('is-active');
+    clock.textContent = '0:00:00';
+    pill.style.display = 'none';
+    actionBox.innerHTML = '';
+  }
+
+  const periodStart = computePeriodStart(range);
+  document.querySelectorAll('[data-proj-id]').forEach(el => {
+    el.textContent = formatHMS(calcProjectDuration(el.dataset.projId, periodStart));
+  });
+
+  const dayTotal = calcTotalDuration(startOfDay(timestamp()));
+  document.getElementById('todayTotalLabel').textContent = 'Hoy: ' + formatHMS(dayTotal);
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('is-open');
+}
+
+function closeModals() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('is-open'));
+}
+
+function openEditProjectModal(projectId) {
+  editingProjectId = projectId;
+  const p = state.projects.find(x => x.id === projectId);
+  if (!p) return;
+  document.getElementById('editProjectNameInput').value = p.name;
+  document.getElementById('editProjectFolderSelect').value = p.folderId || '';
+  openModal('editProjectModal');
+}
+
+function openEditFolderModal(folderId) {
+  editingFolderId = folderId;
+  folderDeleteArmed = false;
+  const f = state.folders.find(x => x.id === folderId);
+  if (!f) return;
+  document.getElementById('editFolderNameInput').value = f.name;
+  const count = state.projects.filter(p => p.folderId === folderId).length;
+  document.getElementById('editFolderCountInfo').textContent = 
+    count === 0 ? 'No tiene proyectos asignados.' : `Tiene ${count} ${count === 1 ? 'proyecto asignado' : 'proyectos asignados'} (no se borrarán, pasarán a "Sin carpeta").`;
+  
+  const delBtn = document.getElementById('deleteCurrentFolderBtn');
+  delBtn.textContent = 'Eliminar carpeta';
+  openModal('editFolderModal');
+}
+
+document.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', closeModals));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') closeModals(); });
+
+// Modales
+document.getElementById('openProjectsPanelBtn').addEventListener('click', () => openModal('projectsModal'));
+document.getElementById('openLogBtn').addEventListener('click', () => { renderHistoryView(); openModal('logModal'); });
+document.getElementById('openFoldersBtn').addEventListener('click', () => openModal('foldersModal'));
+document.getElementById('openSettingsBtn').addEventListener('click', () => {
+  document.getElementById('confirmResetInput').value = '';
+  document.getElementById('confirmResetBtn').disabled = true;
+  openModal('settingsModal');
+});
+
+// Filtros
+document.getElementById('homeFolderSelect').addEventListener('change', e => { homeFolder = e.target.value; renderApp(); });
+document.getElementById('panelFolderSelect').addEventListener('change', e => { panelFolder = e.target.value; renderApp(); });
+document.getElementById('logFolderSelect').addEventListener('change', e => { logFolder = e.target.value; renderHistoryView(); });
+document.getElementById('logProjectSelect').addEventListener('change', e => { logProject = e.target.value; renderHistoryView(); });
+
+// Edición de Sesiones
+document.getElementById('toggleTodayEditBtn').addEventListener('click', () => {
+  todayEditMode = !todayEditMode;
+  todaySelectedSessionIds.clear();
+  renderTodayView();
+});
+
+document.getElementById('todaySelectAllBtn').addEventListener('click', () => {
+  const dayStart = startOfDay(new Date());
+  const todaySessions = state.sessions.filter(s => s.start >= dayStart);
+  if (todaySelectedSessionIds.size === todaySessions.length) {
+    todaySelectedSessionIds.clear();
+  } else {
+    todaySessions.forEach(s => todaySelectedSessionIds.add(s.id));
+  }
+  renderTodayView();
+});
+
+document.getElementById('todayDeleteSelectedBtn').addEventListener('click', () => {
+  state.sessions = state.sessions.filter(s => !todaySelectedSessionIds.has(s.id));
+  todaySelectedSessionIds.clear();
+  todayEditMode = false;
+  persist();
+  renderApp();
+});
+
+document.getElementById('toggleLogEditBtn').addEventListener('click', () => {
+  logEditMode = !logEditMode;
+  logSelectedSessionIds.clear();
+  renderHistoryView();
+});
+
+document.getElementById('logSelectAllBtn').addEventListener('click', () => {
+  const fromTime = computePeriodStart(logRange);
+  const rows = state.sessions.filter(s => s.start >= fromTime);
+  if (logSelectedSessionIds.size === rows.length) {
+    logSelectedSessionIds.clear();
+  } else {
+    rows.forEach(s => logSelectedSessionIds.add(s.id));
+  }
+  renderHistoryView();
+});
+
+document.getElementById('logDeleteSelectedBtn').addEventListener('click', () => {
+  state.sessions = state.sessions.filter(s => !logSelectedSessionIds.has(s.id));
+  logSelectedSessionIds.clear();
+  logEditMode = false;
+  persist();
+  renderApp();
+});
+
+// Edición de Proyectos
+document.getElementById('saveProjectChangesBtn').addEventListener('click', () => {
+  const p = state.projects.find(x => x.id === editingProjectId);
+  if (!p) return;
+  const newName = document.getElementById('editProjectNameInput').value.trim();
+  if (newName) p.name = newName;
+  p.folderId = document.getElementById('editProjectFolderSelect').value || null;
+  persist();
+  closeModals();
+  renderApp();
+});
+
+document.getElementById('deleteCurrentProjectBtn').addEventListener('click', () => {
+  state.projects = state.projects.filter(x => x.id !== editingProjectId);
+  state.sessions = state.sessions.filter(x => x.projectId !== editingProjectId);
+  if (state.running && state.running.projectId === editingProjectId) state.running = null;
+  editingProjectId = null;
+  persist();
+  closeModals();
+  renderApp();
+});
+
+// Edición y Borrado de Carpetas
+document.getElementById('saveFolderChangesBtn').addEventListener('click', () => {
+  const f = state.folders.find(x => x.id === editingFolderId);
+  if (!f) return;
+  const newName = document.getElementById('editFolderNameInput').value.trim();
+  if (newName) f.name = newName;
+  persist();
+  closeModals();
+  renderApp();
+});
+
+document.getElementById('deleteCurrentFolderBtn').addEventListener('click', e => {
+  if (!folderDeleteArmed) {
+    folderDeleteArmed = true;
+    e.target.textContent = '¿Confirmar eliminación?';
+    setTimeout(() => {
+      folderDeleteArmed = false;
+      e.target.textContent = 'Eliminar carpeta';
+    }, 4000);
+    return;
+  }
+  state.folders = state.folders.filter(x => x.id !== editingFolderId);
+  state.projects.forEach(p => { if (p.folderId === editingFolderId) p.folderId = null; });
+  editingFolderId = null;
+  folderDeleteArmed = false;
+  persist();
+  closeModals();
+  renderApp();
+});
+
+// Creación
+document.getElementById('addProjectBtn').addEventListener('click', () => {
+  addProject(document.getElementById('newProjectInput'), document.getElementById('newProjectFolderSelect'));
+});
+document.getElementById('newProjectInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addProject(document.getElementById('newProjectInput'), document.getElementById('newProjectFolderSelect'));
+});
+
+document.getElementById('saveFolderBtn').addEventListener('click', () => {
+  const inp = document.getElementById('folderNameInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  state.folders.push({ id: uid(), name: val });
+  inp.value = '';
+  persist();
+  renderApp();
+});
+document.getElementById('folderNameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('saveFolderBtn').click();
+});
+
+// Tema
+document.getElementById('themeToggleBtn').addEventListener('click', () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  syncTheme();
+  try { localStorage.setItem(DB_KEY + ':theme', theme); } catch (e) {}
+});
+
+// CSV
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+  if (!state.sessions.length) return showNotice('No hay registros');
+  const rows = [['carpeta', 'proyecto', 'inicio', 'fin', 'duracion_hms', 'minutos']];
+  const iso = ms => new Date(ms).toLocaleString('sv-SE').replace(' ', 'T');
+  for (const s of [...state.sessions].sort((a,b) => a.start - b.start)) {
+    const p = state.projects.find(x => x.id === s.projectId);
+    const f = p && p.folderId ? getFolder(p.folderId) : null;
+    rows.push([f ? f.name : '', getProjectName(s.projectId), iso(s.start), iso(s.end), formatHMS(s.end - s.start), Math.round((s.end - s.start) / 60000)]);
+  }
+  const csvContent = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `horas-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Reset seguro
+document.getElementById('confirmResetInput').addEventListener('input', e => {
+  document.getElementById('confirmResetBtn').disabled = e.target.value.trim() !== 'BORRAR';
+});
+
+document.getElementById('confirmResetBtn').addEventListener('click', () => {
+  state = { folders: [], projects: [], sessions: [], running: null };
+  persist();
+  closeModals();
+  renderApp();
+});
+
+setInterval(() => { if (isReady) updateLiveTicks(); }, 1000);
+initStorage().then(renderApp);
+</script>
+</body>
+</html>
